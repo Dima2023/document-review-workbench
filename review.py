@@ -55,12 +55,27 @@ def validate(fields):
     return errors
 
 
+MAX_PDF_BYTES = 2*1024*1024
+
+
+def read_snapshot(path):
+    """Read once, bounded; parsing and provenance share these immutable bytes."""
+    with path.open('rb') as stream:
+        snapshot = stream.read(MAX_PDF_BYTES + 1)
+    if len(snapshot) > MAX_PDF_BYTES: raise ValueError('PDF exceeds 2 MiB')
+    return snapshot
+
+
 def extract_pdf(path):
+    return extract_snapshot(read_snapshot(path))
+
+
+def extract_snapshot(snapshot):
     from pypdf import PdfReader
     from pypdf.errors import PyPdfError
-    if path.stat().st_size > 2*1024*1024: raise ValueError('PDF exceeds 2 MiB')
+    if len(snapshot) > MAX_PDF_BYTES: raise ValueError('PDF exceeds 2 MiB')
     try:
-        reader=PdfReader(path)
+        reader=PdfReader(io.BytesIO(snapshot))
         if reader.is_encrypted or len(reader.pages)>2: raise ValueError('Use an unencrypted PDF with at most 2 pages')
         pages=[page.extract_text() or '' for page in reader.pages]
     except PyPdfError as exc:
@@ -116,8 +131,9 @@ def main():
     parser.add_argument('--output',type=Path,default=Path('reviewed.csv'))
     args=parser.parse_args()
     try:
-        pages=extract_pdf(args.source); fields=parse_mock(pages)
-        digest=hashlib.sha256(args.source.read_bytes()).hexdigest()
+        snapshot=read_snapshot(args.source)
+        pages=extract_snapshot(snapshot); fields=parse_mock(pages)
+        digest=hashlib.sha256(snapshot).hexdigest()
         print('MOCK EXTRACTION — no AI provider connected. Source:',args.source)
         print('\n'.join(pages))
         for key in ALIASES:
