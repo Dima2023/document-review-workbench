@@ -1,0 +1,45 @@
+test_dangling_symlink_is_preserved (test_publication.Tests.test_dangling_symlink_is_preserved) ... ERROR
+test_fsync_failure_publishes_nothing (test_publication.Tests.test_fsync_failure_publishes_nothing) ... ERROR
+test_partial_write_failure_publishes_nothing (test_publication.Tests.test_partial_write_failure_publishes_nothing) ... ERROR
+test_success_and_no_overwrite (test_publication.Tests.test_success_and_no_overwrite) ... ERROR
+
+======================================================================
+ERROR: test_dangling_symlink_is_preserved (test_publication.Tests.test_dangling_symlink_is_preserved)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/dmitryberenzon/Documents/Codex/2026-10-28/task-8/public-repos/document-review-workbench/test_publication.py", line 30, in test_dangling_symlink_is_preserved
+    with self.assertRaises(OSError):review.publish(self.target,b'complete CSV')
+                                    ^^^^^^^^^^^^^^
+AttributeError: module 'review' has no attribute 'publish'
+
+======================================================================
+ERROR: test_fsync_failure_publishes_nothing (test_publication.Tests.test_fsync_failure_publishes_nothing)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/dmitryberenzon/Documents/Codex/2026-10-28/task-8/public-repos/document-review-workbench/test_publication.py", line 15, in test_fsync_failure_publishes_nothing
+    with patch.object(review.os,'fsync',side_effect=OSError('synthetic disk error')):
+                      ^^^^^^^^^
+AttributeError: module 'review' has no attribute 'os'
+
+======================================================================
+ERROR: test_partial_write_failure_publishes_nothing (test_publication.Tests.test_partial_write_failure_publishes_nothing)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/dmitryberenzon/Documents/Codex/2026-10-28/task-8/public-repos/document-review-workbench/test_publication.py", line 19, in test_partial_write_failure_publishes_nothing
+    original=review.tempfile.NamedTemporaryFile
+             ^^^^^^^^^^^^^^^
+AttributeError: module 'review' has no attribute 'tempfile'
+
+======================================================================
+ERROR: test_success_and_no_overwrite (test_publication.Tests.test_success_and_no_overwrite)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/dmitryberenzon/Documents/Codex/2026-10-28/task-8/public-repos/document-review-workbench/test_publication.py", line 11, in test_success_and_no_overwrite
+    review.publish(self.target,b'a,b\n1,2\n');self.assertEqual(self.target.read_bytes(),b'a,b\n1,2\n')
+    ^^^^^^^^^^^^^^
+AttributeError: module 'review' has no attribute 'publish'
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.002s
+
+FAILED (errors=4)

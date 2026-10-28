@@ -1,0 +1,1 @@
+Original direct exclusive-write pattern: injected error after 3 written bytes leaves partial destination (3 bytes). Reproduced with a temporary file; no source modified.

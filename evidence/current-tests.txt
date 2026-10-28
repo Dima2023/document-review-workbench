@@ -3,6 +3,10 @@ test_malformed_pdf (test_pdf.PDFTests.test_malformed_pdf) ... invalid pdf header
 EOF marker not found
 ok
 test_real_digital_pdfs (test_pdf.PDFTests.test_real_digital_pdfs) ... ok
+test_dangling_symlink_is_preserved (test_publication.Tests.test_dangling_symlink_is_preserved) ... ok
+test_fsync_failure_publishes_nothing (test_publication.Tests.test_fsync_failure_publishes_nothing) ... ok
+test_partial_write_failure_publishes_nothing (test_publication.Tests.test_partial_write_failure_publishes_nothing) ... ok
+test_success_and_no_overwrite (test_publication.Tests.test_success_and_no_overwrite) ... ok
 test_ambiguous_duplicates (test_review.Tests.test_ambiguous_duplicates) ... ok
 test_bad_amounts_and_formula (test_review.Tests.test_bad_amounts_and_formula) ... ok
 test_export_requires_approval (test_review.Tests.test_export_requires_approval) ... ok
@@ -10,6 +14,6 @@ test_missing_and_mismatch (test_review.Tests.test_missing_and_mismatch) ... ok
 test_two_layouts (test_review.Tests.test_two_layouts) ... ok
 
 ----------------------------------------------------------------------
-Ran 8 tests in 0.519s
+Ran 12 tests in 0.810s
 
 OK

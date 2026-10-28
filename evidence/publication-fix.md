@@ -1,0 +1,1 @@
+Original direct exclusive-write path reproduced a partial destination after an injected write failure. Replaced with complete staged publication using no-clobber hard links (existing converter publication routine). Tests cover partial write, fsync failure, occupied output and dangling symlink preservation. All 12 tests passed; no live APIs or credentials used.

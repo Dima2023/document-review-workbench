@@ -6,6 +6,8 @@ from decimal import Decimal, InvalidOperation
 import hashlib
 import io
 import json
+import os
+import tempfile
 from pathlib import Path
 import re
 
@@ -79,6 +81,35 @@ def export_csv(fields, source, sha256, approved):
     return stream.getvalue()
 
 
+def publish(destination, payload):
+    """Publish a closed, complete file using an atomic, no-clobber hard link.
+
+    Requires a stable, trusted directory on a local filesystem supporting links.
+    This provides visibility atomicity, not power-loss durability.
+    """
+    staged = tempfile.NamedTemporaryFile(mode='wb', prefix='.csv-json-',
+                                         suffix='.tmp', dir=destination.parent,
+                                         delete=False)
+    temporary = Path(staged.name)
+    published = False
+    try:
+        with staged as stream:
+            if stream.write(payload) != len(payload):
+                raise OSError('short write while staging output')
+            stream.flush()
+            os.fsync(stream.fileno())
+        # No check-then-rename race: link fails if any destination entry exists,
+        # including a dangling symlink. Never remove or replace that entry.
+        os.link(temporary, destination)
+        published = True
+    finally:
+        try:
+            temporary.unlink()
+        except OSError as exc:
+            state = 'complete destination was published' if published else 'destination was not published'
+            raise OSError(f'temporary cleanup failed: {temporary}; {state}; {exc}') from exc
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('source',type=Path)
@@ -97,7 +128,7 @@ def main():
         print(json.dumps(fields,indent=2))
         approved=input('After checking the source, type APPROVE to export: ')=='APPROVE'
         output=export_csv(fields,args.source.name,digest,approved)
-        with args.output.open('x',encoding='utf-8',newline='') as stream: stream.write(output)
+        publish(args.output, output.encode('utf-8'))
         print('Saved',args.output)
     except (ValueError,OSError,EOFError) as exc:
         print('error:',exc); return 2
