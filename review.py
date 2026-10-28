@@ -133,6 +133,8 @@ def main():
     try:
         snapshot=read_snapshot(args.source)
         pages=extract_snapshot(snapshot); fields=parse_mock(pages)
+        if not fields['source_page']:
+            raise ValueError('Unsupported document format: no recognized invoice fields; source page unavailable')
         digest=hashlib.sha256(snapshot).hexdigest()
         print('MOCK EXTRACTION — no AI provider connected. Source:',args.source)
         print('\n'.join(pages))

@@ -28,9 +28,28 @@ class PDFTests(unittest.TestCase):
    self.assertEqual(r.returncode,2); self.assertFalse(target.exists())
    r=subprocess.run(cmd,input='\n'*6+'APPROVE\n',capture_output=True,text=True)
    self.assertEqual(r.returncode,0,r.stdout+r.stderr); before=target.read_bytes()
-   self.assertIn(hashlib.sha256(source.read_bytes()).hexdigest(),target.read_text())
+   self.assertEqual(before,(source.parent/'expected-invoice-1.csv').read_bytes())
    r=subprocess.run(cmd,input='\n'*6+'APPROVE\n',capture_output=True,text=True)
    self.assertEqual(r.returncode,2); self.assertEqual(target.read_bytes(),before)
+ def test_unrecognized_pdf_stops_before_requesting_corrections(self):
+  import review
+  from pypdf import PdfReader, PdfWriter
+  from pypdf.generic import DecodedStreamObject, NameObject
+  with tempfile.TemporaryDirectory() as tmp:
+   source=Path(tmp)/'unsupported.pdf'; target=Path(tmp)/'result.csv'
+   reader=PdfReader(Path(__file__).parent/'examples/invoice-1.pdf')
+   page=reader.pages[0]
+   stream=DecodedStreamObject()
+   stream.set_data(b'BT /F1 12 Tf 72 700 Td (Synthetic unsupported document) Tj ET')
+   page[NameObject('/Contents')]=stream
+   writer=PdfWriter(); writer.add_page(page)
+   with source.open('wb') as output: writer.write(output)
+   captured=io.StringIO()
+   with patch('sys.argv',['review.py',str(source),'--output',str(target)]), patch('builtins.input',return_value='') as prompt, redirect_stdout(captured):
+    self.assertEqual(review.main(),2)
+   prompt.assert_not_called()
+   self.assertIn('Unsupported document format',captured.getvalue())
+   self.assertFalse(target.exists())
  def test_source_replaced_after_parser_opens_keeps_matching_digest(self):
   import pypdf
   import review
