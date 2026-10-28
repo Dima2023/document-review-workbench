@@ -1,0 +1,2 @@
+invoice,date,subtotal,tax,total,currency,source_page,source_file,source_sha256,extraction_mode,review_status
+DEMO-001,2026-10-01,100.00,20.00,120.00,USD,1,invoice-1.pdf,ab635da958860d2d2dcb9ca7e9986c460399993768a3f635aa5e5818967649f7,mock_rules,human_approved

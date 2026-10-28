@@ -1,0 +1,4 @@
+-r requirements.txt
+reportlab==5.1.0
+pillow==13.0.0
+pypdfium2==5.14.0

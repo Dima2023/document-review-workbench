@@ -1,0 +1,15 @@
+test_cli_human_gate_and_no_overwrite (test_pdf.PDFTests.test_cli_human_gate_and_no_overwrite) ... ok
+test_malformed_pdf (test_pdf.PDFTests.test_malformed_pdf) ... invalid pdf header: b'not a'
+EOF marker not found
+ok
+test_real_digital_pdfs (test_pdf.PDFTests.test_real_digital_pdfs) ... ok
+test_ambiguous_duplicates (test_review.Tests.test_ambiguous_duplicates) ... ok
+test_bad_amounts_and_formula (test_review.Tests.test_bad_amounts_and_formula) ... ok
+test_export_requires_approval (test_review.Tests.test_export_requires_approval) ... ok
+test_missing_and_mismatch (test_review.Tests.test_missing_and_mismatch) ... ok
+test_two_layouts (test_review.Tests.test_two_layouts) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.519s
+
+OK
