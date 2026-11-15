@@ -1,4 +1,4 @@
-"""Digital invoice review: deterministic MOCK extraction, not an AI call."""
+"""Invoice review: extract fields (OpenAI or offline rules), validate, human approval, CSV export."""
 import argparse
 import csv
 from datetime import date
@@ -84,7 +84,7 @@ def extract_snapshot(snapshot):
     return pages
 
 
-def export_csv(fields, source, sha256, approved):
+def export_csv(fields, source, sha256, approved, mode='mock_rules'):
     if not approved: raise ValueError('Explicit human approval required')
     errors=validate(fields)
     if errors: raise ValueError('; '.join(errors))
@@ -92,7 +92,7 @@ def export_csv(fields, source, sha256, approved):
     source="'"+source if source.startswith(('=','+','-','@','\t','\r')) else source
     stream=io.StringIO(newline='')
     writer=csv.DictWriter(stream,fieldnames=FIELDS+['source_file','source_sha256','extraction_mode','review_status'],lineterminator='\n')
-    writer.writeheader(); writer.writerow({**{key:fields[key] for key in FIELDS},'source_file':source,'source_sha256':sha256,'extraction_mode':'mock_rules','review_status':'human_approved'})
+    writer.writeheader(); writer.writerow({**{key:fields[key] for key in FIELDS},'source_file':source,'source_sha256':sha256,'extraction_mode':mode,'review_status':'human_approved'})
     return stream.getvalue()
 
 
@@ -129,14 +129,24 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('source',type=Path)
     parser.add_argument('--output',type=Path,default=Path('reviewed.csv'))
+    parser.add_argument('--extractor',choices=['mock','openai'],default='mock',
+                        help='openai = live extraction (needs OPENAI_API_KEY); mock = offline label rules')
     args=parser.parse_args()
     try:
         snapshot=read_snapshot(args.source)
-        pages=extract_snapshot(snapshot); fields=parse_mock(pages)
-        if not fields['source_page']:
+        pages=extract_snapshot(snapshot)
+        if args.extractor=='openai':
+            from openai_provider import OpenAIExtractor
+            extractor=OpenAIExtractor(); fields=extractor.extract(pages); mode=extractor.mode
+            page=fields['source_page']
+            if page and (not re.fullmatch(r'[1-9]\d*',page) or int(page)>len(pages)):
+                raise ValueError('Model returned a source page that does not exist')
+        else:
+            fields=parse_mock(pages); mode='mock_rules'
+        if not any(fields[key] for key in ALIASES) or not fields['source_page']:
             raise ValueError('Unsupported document format: no recognized invoice fields; source page unavailable')
         digest=hashlib.sha256(snapshot).hexdigest()
-        print('MOCK EXTRACTION — no AI provider connected. Source:',args.source)
+        print(f'Extraction: {mode}. Source:',args.source)
         print('\n'.join(pages))
         for key in ALIASES:
             value=input(f'{key} [{fields[key]}] (Enter keeps value): ').strip()
@@ -145,7 +155,7 @@ def main():
         if errors: raise ValueError('; '.join(errors))
         print(json.dumps(fields,indent=2))
         approved=input('After checking the source, type APPROVE to export: ')=='APPROVE'
-        output=export_csv(fields,args.source.name,digest,approved)
+        output=export_csv(fields,args.source.name,digest,approved,mode)
         publish(args.output, output.encode('utf-8'))
         print('Saved',args.output)
     except (ValueError,OSError,EOFError) as exc:
