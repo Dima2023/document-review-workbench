@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 
 import requests
@@ -65,16 +66,26 @@ class OpenAIExtractor:
         except requests.RequestException as exc:
             raise ValueError(f"OpenAI request failed: {exc.__class__.__name__}") from None
         if response.status_code != 200:
+            # Never echo the provider's message: it could contain request data or key fragments.
+            code = ""
             try:
-                detail = response.json().get("error", {}).get("message", "")
-            except ValueError:
-                detail = ""
-            raise ValueError(f"OpenAI API error {response.status_code}: {detail[:200]}")
-        message = response.json()["choices"][0]["message"]
-        if message.get("refusal"):
-            raise ValueError(f"Model refused: {message['refusal'][:200]}")
+                error = response.json().get("error", {})
+                code = error.get("code") or error.get("type") or ""
+            except (ValueError, AttributeError):
+                pass
+            code = code if isinstance(code, str) and re.fullmatch(r"[a-z_]{1,40}", code) else "unknown"
+            raise ValueError(f"OpenAI API error {response.status_code} ({code})")
         try:
-            fields = json.loads(message.get("content") or "")
+            message = response.json()["choices"][0]["message"]
+            content, refusal = message.get("content"), message.get("refusal")
+        except (ValueError, KeyError, IndexError, TypeError, AttributeError):
+            raise ValueError("OpenAI returned an unexpected response") from None
+        if refusal:
+            raise ValueError("Model refused to extract this document")
+        if not isinstance(content, str):
+            raise ValueError("OpenAI returned an unexpected response")
+        try:
+            fields = json.loads(content)
         except json.JSONDecodeError:
             raise ValueError("Model returned invalid JSON") from None
         expected = set(SCHEMA["required"])

@@ -2,7 +2,7 @@
 
 # AI invoice extraction with human review
 
-Reads invoices in different layouts, pulls out the key fields with OpenAI, **checks the numbers**, lets a person confirm, and only then exports a clean CSV row that can be traced back to the exact PDF.
+Reads invoices in different layouts, pulls out the key fields with OpenAI, **checks the format and the arithmetic**, lets a person confirm every field, and only then exports a clean CSV row that can be traced back to the exact PDF.
 
 ![Invoice to verified fields](examples/screenshot.png)
 
@@ -21,8 +21,8 @@ About 2 seconds per invoice with `gpt-6-luna`; `gpt-5-mini` gave the same result
 ## How it keeps the data trustworthy
 
 1. **Strict output format:** the model must answer in a fixed JSON schema (OpenAI Structured Outputs). Anything else is rejected.
-2. **Document text is treated as data:** instructions hidden inside a PDF are ignored.
-3. **Validation:** dates, two-decimal amounts, currency codes, and `subtotal + tax = total`. If the AI is wrong, export is blocked.
+2. **Prompt-injection mitigation:** the model is told to treat document text as data and never follow instructions inside it. This lowers the risk; it is not a guarantee, which is one more reason for step 4.
+3. **Validation:** dates, two-decimal amounts, currency codes, and `subtotal + tax = total`. Format and arithmetic mistakes block the export. A value that is plausible but wrong (for example a mistyped invoice number) passes these checks; only the reviewer comparing it with the source can catch it.
 4. **Human in the loop:** every field is shown for correction; nothing is saved until the reviewer types `APPROVE`.
 5. **Traceability:** each CSV row records the source file, page, SHA-256 of the PDF and which model extracted it. Existing files are never overwritten.
 
@@ -32,7 +32,7 @@ About 2 seconds per invoice with `gpt-6-luna`; `gpt-5-mini` gave the same result
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 export OPENAI_API_KEY=...            # or OPENAI_API_KEY_FILE=/path/to/key
 .venv/bin/python review.py examples/invoice-3.pdf --extractor openai --output reviewed.csv
-.venv/bin/python -m unittest discover -v     # 23 tests, no network or key needed
+.venv/bin/python -m unittest discover -v     # 26 tests, no network or key needed
 ```
 
 Without a key, `--extractor mock` uses offline label rules (they read only the two simple layouts).

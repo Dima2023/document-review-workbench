@@ -50,11 +50,22 @@ class ExtractorTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.call(response)
 
-    def test_api_error_does_not_leak_key(self):
+    def test_api_error_does_not_leak_key_or_provider_text(self):
+        body = {'error': {'message': 'Incorrect API key provided: sk-test. Request: page one',
+                          'code': 'invalid_api_key'}}
         with self.assertRaises(ValueError) as caught:
-            self.call(FakeResponse(status=401, body={'error': {'message': 'Incorrect API key'}}))
-        self.assertIn('401', str(caught.exception))
-        self.assertNotIn('sk-test', str(caught.exception))
+            self.call(FakeResponse(status=401, body=body))
+        text = str(caught.exception)
+        self.assertIn('401', text)
+        self.assertIn('invalid_api_key', text)
+        self.assertNotIn('sk-test', text)
+        self.assertNotIn('page one', text)
+
+    def test_malformed_success_envelopes(self):
+        for body in [{}, {'choices': []}, {'choices': [{}]}, {'choices': [{'message': None}]},
+                     {'choices': [{'message': {'content': 5}}]}, {'choices': 'x'}]:
+            with self.assertRaises(ValueError, msg=str(body)):
+                self.call(FakeResponse(body=body))
 
     def test_key_from_file(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -95,6 +106,22 @@ class CliTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertIn('Subtotal plus tax must equal total', out)
         self.assertIsNone(csv_text)
+
+    def test_malformed_response_publishes_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'out.csv'
+            argv = ['review.py', str(EXAMPLES / 'invoice-3.pdf'), '--output', str(target), '--extractor', 'openai']
+            with patch.object(openai_provider.requests, 'post', return_value=FakeResponse(body={'choices': []})), \
+                    patch.dict(os.environ, {'OPENAI_API_KEY': 'sk-test'}), patch('sys.argv', argv), \
+                    patch('builtins.input', side_effect=AssertionError('must not ask')), redirect_stdout(io.StringIO()) as out:
+                self.assertEqual(review.main(), 2)
+            self.assertIn('unexpected response', out.getvalue())
+            self.assertFalse(target.exists())
+
+    def test_plausible_but_wrong_value_passes_validation(self):
+        """Documents the limit: a wrong invoice number that is well-formed is caught only by the human reviewer."""
+        wrong = dict(GOOD, invoice='INV-2026-0148')
+        self.assertEqual(review.validate(wrong), [])
 
     def test_nonexistent_source_page_rejected(self):
         code, out, _ = self.run_cli(dict(GOOD, source_page='7'), [''] * 6)
