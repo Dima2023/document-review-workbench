@@ -1,3 +1,11 @@
+test_nonexistent_source_page_rejected (test_openai_provider.CliTests.test_nonexistent_source_page_rejected) ... ok
+test_offline_rules_cannot_read_new_layout (test_openai_provider.CliTests.test_offline_rules_cannot_read_new_layout) ... ok
+test_openai_path_exports_with_mode (test_openai_provider.CliTests.test_openai_path_exports_with_mode) ... ok
+test_validation_still_guards_model_output (test_openai_provider.CliTests.test_validation_still_guards_model_output) ... ok
+test_api_error_does_not_leak_key (test_openai_provider.ExtractorTests.test_api_error_does_not_leak_key) ... ok
+test_key_from_file (test_openai_provider.ExtractorTests.test_key_from_file) ... ok
+test_refusal_invalid_json_and_schema_drift (test_openai_provider.ExtractorTests.test_refusal_invalid_json_and_schema_drift) ... ok
+test_request_shape_and_result (test_openai_provider.ExtractorTests.test_request_shape_and_result) ... ok
 test_cli_human_gate_and_no_overwrite (test_pdf.PDFTests.test_cli_human_gate_and_no_overwrite) ... ok
 test_malformed_pdf (test_pdf.PDFTests.test_malformed_pdf) ... invalid pdf header: b'not a'
 EOF marker not found
@@ -17,6 +25,6 @@ test_missing_and_mismatch (test_review.Tests.test_missing_and_mismatch) ... ok
 test_two_layouts (test_review.Tests.test_two_layouts) ... ok
 
 ----------------------------------------------------------------------
-Ran 15 tests in 0.388s
+Ran 23 tests in 0.645s
 
 OK

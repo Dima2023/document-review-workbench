@@ -1,7 +1,5 @@
-# Document Review Workbench
+# AI invoice extraction with human review
 
-A digital-invoice review workflow with structured fields, arithmetic checks, source provenance and explicit approval before CSV export.
+Reads invoices in different layouts with OpenAI (Structured Outputs), validates dates, amounts and subtotal + tax = total, asks a person to confirm, and exports a CSV row traceable to the exact PDF (page + SHA-256).
 
-AI-assisted learning demonstration using synthetic data. Development mode only: deterministic mock extraction, no live AI provider. Includes source, runnable examples, test-first evidence and documented limitations. Not client work. No commercial results claimed.
-
-Publication gate: finish authorized real integration testing before describing this as a live AI document processing application. Current wording may only describe a prototype.
+Live OpenAI run on three synthetic invoices, including a realistic layout the offline rules could not read (evidence/live-openai-run.md). 23 automated tests. Portfolio demo with synthetic documents, built with AI assistance; not client work. Not yet tested on scans (no OCR) or on a real-world accuracy sample.

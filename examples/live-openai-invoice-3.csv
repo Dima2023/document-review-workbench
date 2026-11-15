@@ -1,0 +1,2 @@
+invoice,date,subtotal,tax,total,currency,source_page,source_file,source_sha256,extraction_mode,review_status
+INV-2026-0147,2026-10-14,1240.00,248.00,1488.00,GBP,1,invoice-3.pdf,5a318f7ba2f39da0202ea44ddbe29cb6c9c60ac1967cd95076b1a778fa06c581,openai:gpt-6-luna,human_approved
