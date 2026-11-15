@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 from pathlib import Path
 
 import requests
@@ -33,6 +32,32 @@ def load_key() -> str:
     if not key:
         raise ValueError("No OpenAI key: set OPENAI_API_KEY or OPENAI_API_KEY_FILE")
     return key
+
+
+# Only these fixed, locally written texts are ever shown for an API error. Nothing from the
+# provider's error body (message, code, type) is echoed: it could contain request data or key fragments.
+KNOWN_ERROR_CODES = {
+    "invalid_api_key": "the API key was rejected",
+    "insufficient_quota": "the account has no remaining quota",
+    "rate_limit_exceeded": "too many requests, try again later",
+    "model_not_found": "the model is not available to this key",
+    "context_length_exceeded": "the document is too long for the model",
+}
+STATUS_TEXT = {400: "the request was rejected", 401: "the API key was rejected", 403: "access denied",
+               404: "the model or endpoint was not found", 429: "rate limit or quota reached"}
+
+
+def _describe_error(response) -> str:
+    try:
+        error = response.json().get("error") or {}
+        code = error.get("code") if isinstance(error, dict) else None
+    except (ValueError, AttributeError):
+        code = None
+    if isinstance(code, str) and code in KNOWN_ERROR_CODES:
+        return KNOWN_ERROR_CODES[code]
+    if response.status_code >= 500:
+        return "OpenAI service error, try again later"
+    return STATUS_TEXT.get(response.status_code, "unexpected error")
 
 
 class OpenAIExtractor:
@@ -66,15 +91,7 @@ class OpenAIExtractor:
         except requests.RequestException as exc:
             raise ValueError(f"OpenAI request failed: {exc.__class__.__name__}") from None
         if response.status_code != 200:
-            # Never echo the provider's message: it could contain request data or key fragments.
-            code = ""
-            try:
-                error = response.json().get("error", {})
-                code = error.get("code") or error.get("type") or ""
-            except (ValueError, AttributeError):
-                pass
-            code = code if isinstance(code, str) and re.fullmatch(r"[a-z_]{1,40}", code) else "unknown"
-            raise ValueError(f"OpenAI API error {response.status_code} ({code})")
+            raise ValueError(f"OpenAI API error {response.status_code}: {_describe_error(response)}")
         try:
             message = response.json()["choices"][0]["message"]
             content, refusal = message.get("content"), message.get("refusal")

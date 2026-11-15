@@ -25,6 +25,7 @@ About 2 seconds per invoice with `gpt-6-luna`; `gpt-5-mini` gave the same result
 3. **Validation:** dates, two-decimal amounts, currency codes, and `subtotal + tax = total`. Format and arithmetic mistakes block the export. A value that is plausible but wrong (for example a mistyped invoice number) passes these checks; only the reviewer comparing it with the source can catch it.
 4. **Human in the loop:** every field is shown for correction; nothing is saved until the reviewer types `APPROVE`.
 5. **Traceability:** each CSV row records the source file, page, SHA-256 of the PDF and which model extracted it. Existing files are never overwritten.
+6. **No leaks in error messages:** if the API call fails, only the HTTP status and a fixed local description are shown; nothing from the provider's error body (which could echo document text or key fragments) is printed.
 
 ## Run it
 
@@ -32,7 +33,7 @@ About 2 seconds per invoice with `gpt-6-luna`; `gpt-5-mini` gave the same result
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 export OPENAI_API_KEY=...            # or OPENAI_API_KEY_FILE=/path/to/key
 .venv/bin/python review.py examples/invoice-3.pdf --extractor openai --output reviewed.csv
-.venv/bin/python -m unittest discover -v     # 26 tests, no network or key needed
+.venv/bin/python -m unittest discover -v     # 29 tests, no network or key needed
 ```
 
 Without a key, `--extractor mock` uses offline label rules (they read only the two simple layouts).
